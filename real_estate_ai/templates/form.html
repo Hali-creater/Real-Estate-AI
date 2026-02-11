@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UAE Real Estate Inquiry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .form-container { max-width: 600px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-primary { background-color: #0056b3; border: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h2 class="text-center mb-4">UAE Real Estate Inquiry</h2>
+            <form action="/submit-lead" method="post">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-control" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="budget" class="form-label">Budget (AED)</label>
+                        <input type="number" id="budget" name="budget" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="area" class="form-label">Preferred Area</label>
+                        <input type="text" id="area" name="area" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="property_type" class="form-label">Property Type</label>
+                    <select id="property_type" name="property_type" class="form-select">
+                        <option value="Apartment">Apartment</option>
+                        <option value="Villa">Villa</option>
+                        <option value="Townhouse">Townhouse</option>
+                        <option value="Penthouse">Penthouse</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="timeframe" class="form-label">Buying Timeframe</label>
+                        <select id="timeframe" name="timeframe" class="form-select">
+                            <option value="1 month">Within 1 month</option>
+                            <option value="3 months">Within 3 months</option>
+                            <option value="6 months+">6 months+</option>
+                            <option value="Just Browsing">Just Browsing</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="source" class="form-label">Lead Source</label>
+                        <select id="source" name="source" class="form-select">
+                            <option value="Website">Website</option>
+                            <option value="PropertyFinder">PropertyFinder</option>
+                            <option value="Bayut">Bayut</option>
+                            <option value="Dubizzle">Dubizzle</option>
+                            <option value="Referral">Referral</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="mortgage_status" class="form-label">Mortgage Approved?</label>
+                        <select id="mortgage_status" name="mortgage_status" class="form-select">
+                            <option value="approved">Yes</option>
+                            <option value="not_approved">No</option>
+                            <option value="checking">Checking</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="cash_buyer" id="cash_buyer">
+                            <label class="form-check-label" for="cash_buyer">Cash Buyer?</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea id="message" name="message" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Submit Inquiry</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
