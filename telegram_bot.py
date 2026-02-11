@@ -23,7 +23,7 @@ async def send_telegram_alert(lead_details: dict):
     message = (
         f"{status_emoji} *{lead_details['status']} LEAD ALERT*\n\n"
         f"*Name:* {lead_details['name']}\n"
-        f"*Budget:* {lead_details['budget']:,} AED\n"
+        f"*Budget:* ${lead_details['budget']:,}\n"
         f"*Area:* {lead_details['area']}\n"
         f"*Timeframe:* {lead_details['timeframe']}\n"
         f"*Close Probability:* {lead_details['probability']}%\n\n"

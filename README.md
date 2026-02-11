@@ -1,15 +1,16 @@
-# UAE Real Estate AI Lead Intelligence System
+# SpeedToLead AI: US Realtor Appointment Engine
 
-A sophisticated lead management system designed for UAE real estate agencies, featuring automated scoring, intelligence-driven actions, and real-time alerts.
+A high-performance lead intelligence and automated follow-up system designed for US Real Estate professionals. Convert Zillow, Realtor.com, and Facebook leads into booked appointments with extreme care and precision.
 
 ## 🚀 Key Features
 
-*   **Intelligent Lead Capture**: Multi-platform lead source tracking (PropertyFinder, Bayut, Website, etc.).
-*   **AI Lead Scoring**: Rule-based engine that classifies leads as **HOT**, **WARM**, or **COLD** based on budget, timeframe, and financial status.
-*   **Recommended Actions**: Instant instructions for agents (e.g., "Call within 10 minutes").
-*   **Agent Dashboard**: Real-time metrics including "Speed to Lead" and "Close Probability".
-*   **Telegram Integration**: Real-time alerts and automated follow-up reminders (1, 3, and 7 days).
-*   **Flexible UI**: Choice between a modern **Streamlit** app and a lightweight **FastAPI** web form.
+*   **US Market Optimized**: Tailored for Zillow/Realtor.com lead sources and ZIP-code based neighborhood targeting.
+*   **AI Lead Scoring & ROI**: Rule-based engine that classifies leads (**HOT**, **WARM**, **COLD**) and calculates **Estimated Commission ROI** (2.5% standard).
+*   **Automated US Drip Campaigns**: Professional SMS and Email drips (1, 3, and 7 days) with **TCPA/CAN-SPAM Compliance** ("Reply STOP to opt-out").
+*   **Quiet Hours Logic**: Intelligent scheduling that prevents automated SMS during nighttime hours (8 PM - 8 AM).
+*   **Appointment Tracking**: Dedicated dashboard to track booked appointments and sync status.
+*   **Agent Dashboard**: Real-time metrics including "Speed to Lead", "Total ROI", and "Appointment Conversion".
+*   **Flexible UI**: Choice between a powerful **Streamlit** dashboard and a lightweight **FastAPI** web intake form.
 
 ## 🛠️ Tech Stack
 
@@ -27,8 +28,9 @@ A sophisticated lead management system designed for UAE real estate agencies, fe
 ├── main.py             # FastAPI Backend & API
 ├── models.py           # Database Models
 ├── database.py         # Database Configuration
-├── lead_scoring.py     # AI Scoring Logic
-├── telegram_bot.py     # Telegram Integration
+├── lead_scoring.py     # AI Scoring & ROI Logic
+├── communication.py    # US SMS/Email Scripts & Stubs
+├── telegram_bot.py     # Internal Agent Alerts
 ├── scheduler.py        # Follow-up Automation
 ├── templates/          # HTML Templates for FastAPI
 └── requirements.txt    # Project Dependencies

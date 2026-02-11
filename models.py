@@ -20,6 +20,12 @@ class Lead(Base):
     cash_buyer = Column(Boolean, default=False)
     message = Column(Text)
 
+    # US Compliance & CRM fields
+    sms_opt_in = Column(Boolean, default=False)
+    appointment_booked = Column(Boolean, default=False)
+    crm_synced = Column(Boolean, default=False)
+    estimated_commission = Column(Float, default=0.0)
+
     # Intelligence fields
     score = Column(Integer, default=0)
     close_probability = Column(Float, default=0.0)

@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown (if needed)
 
-app = FastAPI(title="UAE Real Estate AI Lead System", lifespan=lifespan)
+app = FastAPI(title="SpeedToLead AI: US Appointment Engine", lifespan=lifespan)
 
 # Ensure templates directory is found
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +49,7 @@ async def submit_lead(
     source: str = Form("Website"),
     mortgage_status: str = Form(...),
     cash_buyer: bool = Form(False),
+    sms_opt_in: bool = Form(False),
     message: str = Form(""),
     db: Session = Depends(get_db)
 ):
@@ -78,7 +79,9 @@ async def submit_lead(
         score=scoring_result['score'],
         lead_status=scoring_result['status'],
         close_probability=scoring_result['probability'],
-        recommended_action=scoring_result['action']
+        recommended_action=scoring_result['action'],
+        sms_opt_in=sms_opt_in,
+        estimated_commission=scoring_result.get('commission', 0.0)
     )
     db.add(new_lead)
     db.commit()
@@ -98,8 +101,15 @@ async def submit_lead(
     import asyncio
     asyncio.create_task(send_telegram_alert(lead_details_for_alert))
 
-    # 4. Schedule Follow-ups
-    asyncio.create_task(schedule_lead_follow_ups(new_lead.id, name, scoring_result['status']))
+    # 4. Schedule Follow-ups (US Drip Campaign)
+    asyncio.create_task(schedule_lead_follow_ups(
+        new_lead.id,
+        name,
+        email,
+        phone,
+        scoring_result['status'],
+        sms_opt_in
+    ))
 
     return HTMLResponse(content="<h2>Thank you for your inquiry! An agent will contact you shortly.</h2><a href='/'>Go Back</a>")
 
