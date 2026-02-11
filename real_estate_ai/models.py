@@ -15,6 +15,7 @@ class Lead(Base):
     area = Column(String)
     property_type = Column(String)
     timeframe = Column(String)
+    source = Column(String, default="Website")
     mortgage_status = Column(String) # "approved", "not_approved", etc.
     cash_buyer = Column(Boolean, default=False)
     message = Column(Text)
@@ -23,6 +24,7 @@ class Lead(Base):
     score = Column(Integer, default=0)
     close_probability = Column(Float, default=0.0)
     lead_status = Column(String, default="COLD") # HOT, WARM, COLD
+    recommended_action = Column(String)
 
     # Tracking fields
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

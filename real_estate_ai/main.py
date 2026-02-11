@@ -51,6 +51,7 @@ async def submit_lead(
     area: str = Form(...),
     property_type: str = Form(...),
     timeframe: str = Form(...),
+    source: str = Form("Website"),
     mortgage_status: str = Form(...),
     cash_buyer: bool = Form(False),
     message: str = Form(""),
@@ -75,12 +76,14 @@ async def submit_lead(
         area=area,
         property_type=property_type,
         timeframe=timeframe,
+        source=source,
         mortgage_status=mortgage_status,
         cash_buyer=cash_buyer,
         message=message,
         score=scoring_result['score'],
         lead_status=scoring_result['status'],
-        close_probability=scoring_result['probability']
+        close_probability=scoring_result['probability'],
+        recommended_action=scoring_result['action']
     )
     db.add(new_lead)
     db.commit()
@@ -93,7 +96,8 @@ async def submit_lead(
         "area": area,
         "timeframe": timeframe,
         "status": scoring_result['status'],
-        "probability": scoring_result['probability']
+        "probability": scoring_result['probability'],
+        "action": scoring_result['action']
     }
 
     import asyncio

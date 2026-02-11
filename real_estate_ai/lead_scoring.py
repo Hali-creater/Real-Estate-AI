@@ -33,10 +33,13 @@ def calculate_lead_score(lead_data: dict):
     # Classification
     if score >= 70:
         status = "HOT"
+        action = "Call within 10 minutes"
     elif score >= 40:
         status = "WARM"
+        action = "Send matching listings"
     else:
         status = "COLD"
+        action = "Add to long-term follow-up"
 
     # Close probability
     probability = min(score * 1.2, 95)
@@ -44,5 +47,6 @@ def calculate_lead_score(lead_data: dict):
     return {
         "score": score,
         "status": status,
-        "probability": probability
+        "probability": probability,
+        "action": action
     }

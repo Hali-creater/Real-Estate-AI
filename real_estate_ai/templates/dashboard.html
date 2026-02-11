@@ -71,9 +71,11 @@
                                 <th>Name</th>
                                 <th>Budget</th>
                                 <th>Area</th>
-                                <th>Score</th>
+                                <th>Timeframe</th>
+                                <th>Source</th>
                                 <th>Status</th>
                                 <th>Prob.</th>
+                                <th>Recommended Action</th>
                                 <th>Created</th>
                                 <th>Action</th>
                             </tr>
@@ -87,7 +89,8 @@
                                 </td>
                                 <td>{{ lead.budget|int }} AED</td>
                                 <td>{{ lead.area }}</td>
-                                <td>{{ lead.score }}</td>
+                                <td><span class="badge bg-secondary">{{ lead.timeframe }}</span></td>
+                                <td><small>{{ lead.source }}</small></td>
                                 <td>
                                     {% if lead.lead_status == 'HOT' %}
                                         <span class="badge bg-danger">HOT</span>
@@ -98,6 +101,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ lead.close_probability }}%</td>
+                                <td><strong>{{ lead.recommended_action }}</strong></td>
                                 <td>{{ lead.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td>
                                     {% if not lead.last_contacted %}

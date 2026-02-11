@@ -28,7 +28,7 @@ async def send_telegram_alert(lead_details: dict):
         f"*Timeframe:* {lead_details['timeframe']}\n"
         f"*Close Probability:* {lead_details['probability']}%\n\n"
         f"*Recommended Action:*\n"
-        f"Call within 10 minutes."
+        f"{lead_details['action']}"
     )
 
     try:
