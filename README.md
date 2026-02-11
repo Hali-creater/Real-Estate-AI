@@ -65,7 +65,7 @@ uvicorn main:app --reload
 ### 1. Streamlit Cloud (Free & Easiest)
 *   Push this code to a GitHub repository.
 *   Connect to [Streamlit Cloud](https://share.streamlit.io/).
-*   Point to `app.py`.
+*   **IMPORTANT**: In the deployment settings, ensure the **Main file path** is set to `app.py`. (Previously it might have been `real_estate_ai/app.py`).
 *   Add your Telegram secrets in the "Settings > Secrets" section.
 
 ### 2. Render / Heroku / DigitalOcean

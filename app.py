@@ -85,7 +85,8 @@ with tabs[0]:
                 })
 
             df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            # use width="stretch" to avoid deprecation warning in newer Streamlit versions
+            st.dataframe(df, width="stretch", hide_index=True)
 
             # Action Area
             st.subheader("Actions")
