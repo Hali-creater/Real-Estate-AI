@@ -12,14 +12,12 @@ try:
     from lead_scoring import calculate_lead_score
     from telegram_bot import send_telegram_alert
     from scheduler import start_scheduler, schedule_lead_follow_ups
-    from dashboard import router as dashboard_router
 except ImportError:
     from .database import init_db, get_db
     from .models import Lead
     from .lead_scoring import calculate_lead_score
     from .telegram_bot import send_telegram_alert
     from .scheduler import start_scheduler, schedule_lead_follow_ups
-    from .dashboard import router as dashboard_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,9 +32,6 @@ app = FastAPI(title="UAE Real Estate AI Lead System", lifespan=lifespan)
 # Ensure templates directory is found
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
-# Include Dashboard Routes
-app.include_router(dashboard_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_form(request: Request):
