@@ -22,7 +22,7 @@ A sophisticated lead management system designed for UAE real estate agencies, fe
 ## 📂 Project Structure
 
 ```text
-real_estate_ai/
+.
 ├── app.py              # Streamlit Application (Main UI)
 ├── main.py             # FastAPI Backend & API
 ├── models.py           # Database Models
@@ -38,7 +38,7 @@ real_estate_ai/
 
 ### 1. Install Dependencies
 ```bash
-pip install -r real_estate_ai/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2. Configure Telegram (Optional)
@@ -52,13 +52,11 @@ export TELEGRAM_CHAT_ID="your_chat_id"
 
 #### Streamlit (Recommended for Dashboards)
 ```bash
-cd real_estate_ai
 streamlit run app.py
 ```
 
 #### FastAPI (Recommended for Web Form Integration)
 ```bash
-cd real_estate_ai
 uvicorn main:app --reload
 ```
 
@@ -67,7 +65,7 @@ uvicorn main:app --reload
 ### 1. Streamlit Cloud (Free & Easiest)
 *   Push this code to a GitHub repository.
 *   Connect to [Streamlit Cloud](https://share.streamlit.io/).
-*   Point to `real_estate_ai/app.py`.
+*   Point to `app.py`.
 *   Add your Telegram secrets in the "Settings > Secrets" section.
 
 ### 2. Render / Heroku / DigitalOcean
