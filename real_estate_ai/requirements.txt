@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+sqlalchemy
+jinja2
+python-telegram-bot
+apscheduler
+pydantic
+python-multipart
