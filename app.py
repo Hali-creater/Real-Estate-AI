@@ -24,7 +24,7 @@ except ImportError:
     from .scheduler import start_scheduler, schedule_lead_follow_ups
 
 # Page Config
-st.set_page_config(page_title="UAE Real Estate AI Lead System", layout="wide")
+st.set_page_config(page_title="SpeedToLead AI: Appointment Engine", layout="wide")
 
 # Initialize DB and Scheduler once
 @st.cache_resource
@@ -43,7 +43,7 @@ tabs = st.tabs(["📊 Agent Dashboard", "📝 Lead Capture Form"])
 
 # --- DASHBOARD TAB ---
 with tabs[0]:
-    st.title("Real Estate Lead Dashboard")
+    st.title("🚀 SpeedToLead AI: US Realtor Dashboard")
 
     db = SessionLocal()
     try:
@@ -52,16 +52,18 @@ with tabs[0]:
         # Stats
         total_leads = len(leads)
         hot_leads = sum(1 for l in leads if l.lead_status == "HOT")
-        warm_leads = sum(1 for l in leads if l.lead_status == "WARM")
+        appointments = sum(1 for l in leads if l.appointment_booked)
+        total_roi = sum(l.estimated_commission for l in leads if l.lead_status == "HOT")
 
         responses = [l.response_time_minutes for l in leads if l.response_time_minutes is not None]
         avg_response = sum(responses) / len(responses) if responses else 0
 
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("Total Leads", total_leads)
         col2.metric("🔥 HOT Leads", hot_leads)
-        col3.metric("⚠️ WARM Leads", warm_leads)
+        col3.metric("📅 Appointments", appointments)
         col4.metric("Avg Response", f"{avg_response:.1f} min")
+        col5.metric("Est. HOT ROI ($)", f"${total_roi:,.0f}")
 
         st.divider()
 
@@ -72,14 +74,14 @@ with tabs[0]:
                 data.append({
                     "ID": l.id,
                     "Name": l.name,
-                    "Phone": l.phone,
-                    "Budget (AED)": f"{l.budget:,.0f}",
-                    "Area": l.area,
-                    "Timeframe": l.timeframe,
+                    "Budget ($)": f"${l.budget:,.0f}",
+                    "Est. Commission": f"${l.estimated_commission:,.0f}",
                     "Source": l.source,
                     "Status": l.lead_status,
                     "Prob.": f"{l.close_probability}%",
                     "Recommended Action": l.recommended_action,
+                    "Appt": "📅" if l.appointment_booked else "No",
+                    "SMS Opt-in": "✅" if l.sms_opt_in else "❌",
                     "Created": l.created_at.strftime('%Y-%m-%d %H:%M'),
                     "Contacted": "✓" if l.last_contacted else "No"
                 })
@@ -89,26 +91,42 @@ with tabs[0]:
             st.dataframe(df, width="stretch", hide_index=True)
 
             # Action Area
-            st.subheader("Actions")
-            uncontacted_leads = [l for l in leads if not l.last_contacted]
-            if uncontacted_leads:
-                lead_to_mark = st.selectbox("Select Lead to Mark as Contacted",
-                                            options=uncontacted_leads,
-                                            format_func=lambda x: f"{x.name} ({x.area})")
-                if st.button("Mark Contacted"):
-                    lead_to_mark.last_contacted = datetime.now(timezone.utc)
-                    # Handle possible tz-naive created_at
-                    created_at = lead_to_mark.created_at
-                    if created_at.tzinfo is None:
-                        created_at = created_at.replace(tzinfo=timezone.utc)
+            st.subheader("Lead Management")
+            col_act1, col_act2 = st.columns(2)
 
-                    diff = lead_to_mark.last_contacted - created_at
-                    lead_to_mark.response_time_minutes = diff.total_seconds() / 60
-                    db.commit()
-                    st.success(f"Marked {lead_to_mark.name} as contacted!")
-                    st.rerun()
-            else:
-                st.info("All leads have been contacted.")
+            with col_act1:
+                uncontacted_leads = [l for l in leads if not l.last_contacted]
+                if uncontacted_leads:
+                    lead_to_mark = st.selectbox("Mark as Contacted",
+                                                options=uncontacted_leads,
+                                                format_func=lambda x: f"{x.name} ({x.source})")
+                    if st.button("Confirm Contact"):
+                        lead_to_mark.last_contacted = datetime.now(timezone.utc)
+                        created_at = lead_to_mark.created_at
+                        if created_at.tzinfo is None:
+                            created_at = created_at.replace(tzinfo=timezone.utc)
+
+                        diff = lead_to_mark.last_contacted - created_at
+                        lead_to_mark.response_time_minutes = diff.total_seconds() / 60
+                        db.commit()
+                        st.success(f"Marked {lead_to_mark.name} as contacted!")
+                        st.rerun()
+                else:
+                    st.info("All leads have been contacted.")
+
+            with col_act2:
+                unbooked_leads = [l for l in leads if not l.appointment_booked]
+                if unbooked_leads:
+                    lead_to_book = st.selectbox("Book Appointment",
+                                                options=unbooked_leads,
+                                                format_func=lambda x: f"{x.name} ({x.lead_status})")
+                    if st.button("Schedule Appointment"):
+                        lead_to_book.appointment_booked = True
+                        db.commit()
+                        st.success(f"Appointment booked for {lead_to_book.name}!")
+                        st.rerun()
+                else:
+                    st.info("All appointments booked.")
         else:
             st.write("No leads found yet.")
 
@@ -117,25 +135,30 @@ with tabs[0]:
 
 # --- FORM TAB ---
 with tabs[1]:
-    st.title("UAE Real Estate Inquiry Form")
+    st.title("🏡 SpeedToLead AI: US Realtor Intake Form")
+    st.write("Convert Zillow and Facebook leads into appointments instantly.")
     with st.form("lead_form", clear_on_submit=True):
         name = st.text_input("Full Name")
         email = st.text_input("Email")
-        phone = st.text_input("Phone")
+        phone = st.text_input("Phone (for SMS alerts)")
 
         col_a, col_b = st.columns(2)
-        budget = col_a.number_input("Budget (AED)", min_value=0, step=100000)
-        area = col_b.text_input("Preferred Area")
+        budget = col_a.number_input("Budget ($)", min_value=0, step=50000)
+        area = col_b.text_input("Target ZIP Code / Neighborhood")
 
-        prop_type = st.selectbox("Property Type", ["Apartment", "Villa", "Townhouse", "Penthouse"])
-        timeframe = st.selectbox("Buying Timeframe", ["1 month", "3 months", "6 months+", "Just Browsing"])
-        source = st.selectbox("Lead Source", ["Website", "PropertyFinder", "Bayut", "Dubizzle", "Referral"])
+        prop_type = st.selectbox("Property Type", ["Single Family Home", "Condo", "Townhouse", "Multi-Family"])
+        timeframe = st.selectbox("Buying Timeframe", ["Immediate", "3 months", "6 months+", "Just Browsing"])
+        source = st.selectbox("Lead Source", ["Zillow", "Realtor.com", "Facebook Ads", "Google Ads", "Website", "Open House"])
 
         col_c, col_d = st.columns(2)
-        mortgage = col_c.selectbox("Mortgage Approved?", ["approved", "not_approved", "checking"])
+        mortgage = col_c.selectbox("Pre-Approved?", ["approved", "not_approved", "checking"])
         cash_buyer = col_d.checkbox("Cash Buyer?")
 
-        message = st.text_area("Message")
+        st.write("---")
+        st.subheader("US Compliance")
+        sms_opt_in = st.checkbox("I agree to receive SMS alerts. Reply STOP to opt-out. (TCPA Compliant)")
+
+        message = st.text_area("Client Message / Notes")
 
         submitted = st.form_submit_button("Submit Inquiry")
 
@@ -163,7 +186,9 @@ with tabs[1]:
                         message=message, score=scoring_result['score'],
                         lead_status=scoring_result['status'],
                         close_probability=scoring_result['probability'],
-                        recommended_action=scoring_result['action']
+                        recommended_action=scoring_result['action'],
+                        sms_opt_in=sms_opt_in,
+                        estimated_commission=scoring_result['commission']
                     )
                     db.add(new_lead)
                     db.commit()
@@ -180,7 +205,14 @@ with tabs[1]:
                     # Running async in Streamlit form submission
                     async def run_tasks():
                         await send_telegram_alert(lead_details)
-                        await schedule_lead_follow_ups(new_lead.id, name, scoring_result['status'])
+                        await schedule_lead_follow_ups(
+                            new_lead.id,
+                            name,
+                            email,
+                            phone,
+                            scoring_result['status'],
+                            sms_opt_in
+                        )
 
                     asyncio.run(run_tasks())
 

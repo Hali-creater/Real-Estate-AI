@@ -7,3 +7,4 @@ apscheduler
 pydantic
 python-multipart
 streamlit
+pandas
