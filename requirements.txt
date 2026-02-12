@@ -8,3 +8,6 @@ pydantic
 python-multipart
 streamlit
 pandas
+beautifulsoup4
+requests
+openai
