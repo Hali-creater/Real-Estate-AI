@@ -10,6 +10,51 @@ client = None
 if os.environ.get("OPENAI_API_KEY"):
     client = OpenAI()
 
+def discover_agencies(query):
+    """
+    Module 1: Lead Discovery
+    Scrapes Google search results for the given query.
+    Targeting Zillow or Realtor.com profiles as per the prompt.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    # Append site restriction if not present
+    if "site:" not in query:
+        query = f"site:zillow.com {query}"
+
+    url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
+
+    results = []
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Google's current structure for organic results
+        for g in soup.select('.g'):
+            anchor = g.select_one('a')
+            title_el = g.select_one('h3')
+            snippet_el = g.select_one('.VwiC3b') # Common snippet class
+
+            if anchor and title_el:
+                link = anchor['href']
+                title = title_el.get_text()
+                snippet = snippet_el.get_text() if snippet_el else ""
+
+                # Basic cleaning of Zillow/Realtor titles
+                clean_title = title.split('|')[0].split('-')[0].strip()
+
+                results.append({
+                    "agency_name": clean_title,
+                    "website": link,
+                    "snippet": snippet,
+                    "city": query.replace("site:zillow.com", "").replace("site:realtor.com", "").strip()
+                })
+    except Exception as e:
+        print(f"Search error: {e}")
+
+    return results
+
 def clean_and_score_agency(data):
     """
     Module 1: Lead Extraction & Scoring
@@ -51,6 +96,11 @@ def clean_and_score_agency(data):
     elif rating > 0 and rating < 3.5:
         base_score -= 1
 
+    # Strength indicators (Consultative/Data-driven)
+    indicators = str(data).lower()
+    if any(kw in indicators for kw in ["premier", "elite", "luxury", "international", "commercial"]):
+        base_score += 1
+
     # Cap score
     score = max(1, min(10, base_score))
 
@@ -67,7 +117,7 @@ def clean_and_score_agency(data):
 
 def scrape_homepage(url):
     """
-    Module 2: Scrape homepage text using BeautifulSoup.
+    Module 2: Scrape homepage text and metadata using BeautifulSoup.
     """
     if not url:
         return ""
@@ -75,20 +125,29 @@ def scrape_homepage(url):
         url = "https://" + url
 
     try:
-        response = requests.get(url, timeout=10)
+        headers = {"User-Agent": "Mozilla/5.0 (Enterprise Intelligence Bot)"}
+        response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Extract Meta Tags
+        meta_desc = soup.find("meta", attrs={"name": "description"})
+        meta_desc = meta_desc["content"] if meta_desc else ""
+
+        title = soup.title.string if soup.title else ""
+
         # Remove script and style elements
-        for script in soup(["script", "style"]):
+        for script in soup(["script", "style", "header", "footer", "nav"]):
             script.decompose()
 
         text = soup.get_text(separator=' ')
         # Clean up whitespace
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = '\n'.join(chunk for chunk in chunks if chunk)
+        main_text = '\n'.join(chunk for chunk in chunks if chunk)
 
-        return text[:5000] # Limit to 5000 chars for LLM
+        combined_content = f"Title: {title}\nDescription: {meta_desc}\n\nContent:\n{main_text}"
+
+        return combined_content[:6000] # Increased limit for better intelligence
     except Exception as e:
         print(f"Error scraping {url}: {e}")
         return ""
@@ -98,7 +157,9 @@ def analyze_website_with_gpt(homepage_text, agency_name):
     Module 2: Website Analysis using GPT (or fallback)
     """
     prompt = f"""
-    You are analyzing a US real estate agency website for '{agency_name}'.
+    You are an Enterprise Real Estate Lead Intelligence AI built for the USA market.
+    You are not a chatbot. You are an Enterprise Business Intelligence Engine.
+    Analyzing website for agency: '{agency_name}'.
 
     Based on the provided homepage content:
     {homepage_text}
@@ -110,7 +171,7 @@ def analyze_website_with_gpt(homepage_text, agency_name):
        - Brand positioning
        - Unique selling proposition
 
-    2. Identify weaknesses:
+    2. Identify weaknesses in their digital sales infrastructure:
        - No automation mentioned
        - No instant response system
        - No chatbot
@@ -118,13 +179,14 @@ def analyze_website_with_gpt(homepage_text, agency_name):
        - No SMS follow-up
        - Manual contact forms
 
-    3. Identify business opportunities where AI automation can improve:
+    3. Identify business opportunities where "AI Real Estate Sales Assistant Infrastructure" can improve:
        - Speed to lead
        - Lead qualification
        - 24/7 response
        - Follow-up automation
        - Conversion rate
 
+    Your tone must be professional, data-driven, and consultative.
     Output a structured JSON response with keys:
     'market', 'niche', 'target_audience', 'positioning', 'usp', 'weaknesses', 'opportunities'.
     """
@@ -140,15 +202,15 @@ def analyze_website_with_gpt(homepage_text, agency_name):
         except Exception as e:
             print(f"GPT Error: {e}")
 
-    # Fallback / Mock Analysis
+    # Fallback / Mock Analysis (Professional Consultative Tone)
     return {
-        "market": "US Market",
-        "niche": "Residential",
-        "target_audience": "Home Buyers/Sellers",
-        "positioning": "Professional Agency",
-        "usp": "Local expertise",
-        "weaknesses": ["Manual contact forms", "No 24/7 response"],
-        "opportunities": ["AI Lead Qualification", "Instant SMS Follow-up"]
+        "market": "US Regional Market",
+        "niche": "High-End Residential",
+        "target_audience": "High-intent Home Buyers and Sellers",
+        "positioning": "Established Local Real Estate Authority",
+        "usp": "Personalized client-centric approach combined with local market expertise",
+        "weaknesses": ["Manual lead qualification workflows", "Limited 24/7 automated engagement systems", "No instant SMS response infrastructure"],
+        "opportunities": ["Implementation of AI Sales Assistant Infrastructure", "Optimization of Speed-to-Lead metrics", "24/7 automated lead qualification"]
     }
 
 def qualify_agency(agency_data, analysis):
@@ -187,27 +249,31 @@ def generate_outreach_email(agency_data, analysis, qualification):
     niche = analysis.get("niche", "Real Estate")
 
     prompt = f"""
+    You are an Enterprise Real Estate Lead Intelligence AI.
     Generate a highly personalized enterprise outreach email for {agency_name}.
+
+    Rules:
+    - Tone: Professional, confident, consultative, NOT spammy
+    - Position product as: "AI Real Estate Sales Assistant Infrastructure"
+    - Avoid hype language
+    - Be consultative
+    - Show deep understanding of their business strengths and gaps
 
     Details:
     - Agency: {agency_name}
     - City: {city}
     - Niche: {niche}
     - Tier: {qualification['tier']}
-    - Weaknesses found: {', '.join(analysis.get('weaknesses', []))}
+    - Identified Weaknesses: {', '.join(analysis.get('weaknesses', []))}
+    - Identified Opportunities: {', '.join(analysis.get('opportunities', []))}
 
-    Rules:
-    - Tone: Professional, confident, not spammy
-    - Position product as AI Sales Infrastructure
-    - Avoid hype language
-    - Be consultative
-    - Show understanding of their business
-    - Include Custom opening referencing city, niche, and team strength
-    - Identify a real business gap (from weaknesses)
-    - Introduce solution as: “AI Real Estate Sales Assistant Infrastructure”
-    - Focus on: Speed-to-lead, AI qualification, 24/7 response, SMS + Web automation, Conversion increase
-    - CTA: 15-minute demo
-    - Include CAN-SPAM compliance language (Address, Unsubscribe)
+    Email Structure:
+    1. Custom opening referencing their city, niche, and specific team strength.
+    2. Identify a real business gap from the website analysis.
+    3. Introduce solution as: “AI Real Estate Sales Assistant Infrastructure”.
+    4. Focus on: Speed-to-lead automation, AI lead qualification, 24/7 response, SMS + Web automation, and conversion increase.
+    5. CTA: 15-minute demo.
+    6. Include professional CAN-SPAM compliance language.
 
     Output Subject Line and Email Body.
     """
@@ -232,28 +298,31 @@ def generate_outreach_email(agency_data, analysis, qualification):
         except Exception as e:
             print(f"GPT Error generating email: {e}")
 
-    # Fallback Template
-    subject = f"Optimizing Speed-to-Lead for {agency_name} in {city}"
+    # Fallback Template (Enterprise Consultative Style)
+    subject = f"Infrastructure Optimization for {agency_name} | {city}"
     body = f"""Hi {agency_data.get('owner_name', 'Team')},
 
-I’ve been following {agency_name}’s work in {city} and was impressed by your {niche} focus.
+I’ve been analyzing {agency_name}’s market positioning in {city} and was impressed by your team’s focus on the {niche} sector.
 
-In reviewing your current digital presence, I noticed that while you have a strong brand, there might be an opportunity to further capture and qualify leads instantly. Most agencies in your tier lose 40% of leads due to response delays.
+In evaluating your digital sales infrastructure, I identified a significant opportunity to enhance your conversion metrics. While your brand presence is strong, the transition from lead capture to qualification currently appears to rely on manual workflows, which can impact your Speed-to-Lead efficiency.
 
-We provide “AI Real Estate Sales Assistant Infrastructure” designed specifically for agencies like yours. Our system ensures:
-- 24/7 Instant response via SMS and Web
-- Automated lead qualification
-- Direct appointment booking into your calendar
+We specialize in deploying "AI Real Estate Sales Assistant Infrastructure" for premium brokerages. Our enterprise-grade system handles:
+- 24/7 Intelligent Lead Qualification (SMS & Web)
+- Instant Speed-to-Lead Automation (Under 60 seconds)
+- Automated Appointment Scheduling for your top agents
 
-I’d love to show you how this could work for your team. Do you have 15 minutes for a brief demo next Tuesday?
+Given {agency_name}'s market strength, I believe this infrastructure could significantly scale your output without increasing overhead.
+
+Do you have 15 minutes next week for a brief consultative demo?
 
 Best regards,
 
 [Your Name]
-SpeedToLead AI Team
+Enterprise Consultant
+SpeedToLead AI
 
 ---
-123 AI Way, San Francisco, CA
-To unsubscribe, reply STOP or click here.
+SpeedToLead AI: 123 Enterprise Way, NY.
+Reply STOP to unsubscribe. [CAN-SPAM Compliant]
 """
     return {"subject": subject, "body": body}
