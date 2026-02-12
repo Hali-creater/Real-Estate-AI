@@ -39,3 +39,37 @@ class Lead(Base):
 
     def __repr__(self):
         return f"<Lead(name='{self.name}', status='{self.lead_status}', score={self.score})>"
+
+class AgencyLead(Base):
+    __tablename__ = "agency_leads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agency_name = Column(String, index=True)
+    owner_name = Column(String, nullable=True)
+    website = Column(String)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
+    google_rating = Column(Float, nullable=True)
+    num_listings = Column(Integer, nullable=True)
+
+    # Analysis fields
+    classification = Column(String, nullable=True) # Solo Agent, Small Team, Large Brokerage, Luxury Brokerage
+    score = Column(Integer, default=0) # 1-10
+    strength_summary = Column(Text, nullable=True)
+    growth_opportunity_summary = Column(Text, nullable=True)
+
+    # Module 2 & 3 fields
+    tier = Column(String, nullable=True) # Tier 1, Tier 2, Tier 3
+    market_analysis = Column(Text, nullable=True) # JSON or structured text
+    weaknesses = Column(Text, nullable=True)
+
+    # Module 4 fields
+    outreach_email = Column(Text, nullable=True)
+    outreach_status = Column(String, default="PENDING") # PENDING, GENERATED, SENT
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f"<AgencyLead(name='{self.agency_name}', tier='{self.tier}', score={self.score})>"

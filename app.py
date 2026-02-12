@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import json
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 import asyncio
@@ -11,17 +12,25 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
     from database import init_db, SessionLocal
-    from models import Lead
+    from models import Lead, AgencyLead
     from lead_scoring import calculate_lead_score
     from telegram_bot import send_telegram_alert
     from scheduler import start_scheduler, schedule_lead_follow_ups
+    from agency_intelligence import (
+        clean_and_score_agency, scrape_homepage, analyze_website_with_gpt,
+        qualify_agency, generate_outreach_email
+    )
 except ImportError:
     # Handle cases where it's run from the root or inside real_estate_ai
     from .database import init_db, SessionLocal
-    from .models import Lead
+    from .models import Lead, AgencyLead
     from .lead_scoring import calculate_lead_score
     from .telegram_bot import send_telegram_alert
     from .scheduler import start_scheduler, schedule_lead_follow_ups
+    from .agency_intelligence import (
+        clean_and_score_agency, scrape_homepage, analyze_website_with_gpt,
+        qualify_agency, generate_outreach_email
+    )
 
 # Page Config
 st.set_page_config(page_title="SpeedToLead AI: Appointment Engine", layout="wide")
@@ -39,7 +48,7 @@ def startup():
 startup()
 
 # Navigation
-tabs = st.tabs(["📊 Agent Dashboard", "📝 Lead Capture Form"])
+tabs = st.tabs(["📊 Agent Dashboard", "📝 Lead Capture Form", "🏢 Enterprise Lead Engine"])
 
 # --- DASHBOARD TAB ---
 with tabs[0]:
@@ -221,3 +230,131 @@ with tabs[1]:
                     st.error(f"An error occurred: {e}")
                 finally:
                     db.close()
+
+# --- ENTERPRISE LEAD ENGINE TAB ---
+with tabs[2]:
+    st.title("🏢 Enterprise Real Estate Lead Intelligence")
+    st.write("Upload scraped agency data to qualify leads and generate premium outreach.")
+
+    uploaded_file = st.file_uploader("Upload Scraped Leads (CSV)", type="csv")
+
+    if uploaded_file is not None:
+        df_uploaded = pd.read_csv(uploaded_file)
+        st.write("### Preview Uploaded Data")
+        st.dataframe(df_uploaded.head(), width="stretch")
+
+        if st.button("🚀 Process & Analyze Leads"):
+            db = SessionLocal()
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            try:
+                for index, row in df_uploaded.iterrows():
+                    # Update progress
+                    progress = (index + 1) / len(df_uploaded)
+                    progress_bar.progress(progress)
+                    status_text.text(f"Processing {row.get('agency_name', 'Unknown')}...")
+
+                    # Module 1: Clean and Score
+                    agency_data = {
+                        "agency_name": row.get("agency_name"),
+                        "num_listings": row.get("num_listings", 0),
+                        "google_rating": row.get("google_rating", 0),
+                        "city": row.get("city"),
+                        "owner_name": row.get("owner_name")
+                    }
+                    initial_analysis = clean_and_score_agency(agency_data)
+
+                    # Module 2: Website Analysis
+                    website = row.get("website")
+                    homepage_text = ""
+                    analysis_result = {}
+                    if website:
+                        homepage_text = scrape_homepage(website)
+                        analysis_result = analyze_website_with_gpt(homepage_text, agency_data["agency_name"])
+
+                    # Module 3: Qualification
+                    qualification = qualify_agency(agency_data, analysis_result)
+
+                    # Module 4: Outreach
+                    outreach = generate_outreach_email(agency_data, analysis_result, qualification)
+
+                    # Save to DB
+                    agency_lead = AgencyLead(
+                        agency_name=agency_data["agency_name"],
+                        owner_name=row.get("owner_name"),
+                        website=website,
+                        phone=row.get("phone"),
+                        email=row.get("email"),
+                        city=row.get("city"),
+                        state=row.get("state"),
+                        google_rating=row.get("google_rating"),
+                        num_listings=row.get("num_listings"),
+                        classification=initial_analysis["classification"],
+                        score=initial_analysis["score"],
+                        strength_summary=initial_analysis["strength_summary"],
+                        growth_opportunity_summary=initial_analysis["growth_opportunity_summary"],
+                        tier=qualification["tier"],
+                        market_analysis=json.dumps(analysis_result),
+                        weaknesses=", ".join(analysis_result.get("weaknesses", [])),
+                        outreach_email=f"Subject: {outreach['subject']}\n\n{outreach['body']}",
+                        outreach_status="GENERATED"
+                    )
+                    db.add(agency_lead)
+
+                db.commit()
+                st.success(f"Successfully processed {len(df_uploaded)} leads!")
+            except Exception as e:
+                st.error(f"Error processing leads: {e}")
+                db.rollback()
+            finally:
+                db.close()
+
+    st.divider()
+    st.subheader("📋 Analyzed Agency Leads")
+
+    db = SessionLocal()
+    try:
+        agency_leads = db.query(AgencyLead).order_by(AgencyLead.created_at.desc()).all()
+        if agency_leads:
+            display_data = []
+            for al in agency_leads:
+                display_data.append({
+                    "Agency": al.agency_name,
+                    "Tier": al.tier,
+                    "Score": al.score,
+                    "Classification": al.classification,
+                    "City": al.city,
+                    "Listings": al.num_listings,
+                    "Status": al.outreach_status
+                })
+
+            df_display = pd.DataFrame(display_data)
+            st.dataframe(df_display, width="stretch", hide_index=True)
+
+            # Action: View Details & Export
+            selected_agency = st.selectbox("Select Agency to view Outreach", options=agency_leads, format_func=lambda x: x.agency_name)
+
+            if selected_agency:
+                col_view1, col_view2 = st.columns(2)
+                with col_view1:
+                    st.info(f"**Strength:** {selected_agency.strength_summary}")
+                    st.warning(f"**Weaknesses:** {selected_agency.weaknesses}")
+                with col_view2:
+                    st.success(f"**Opportunity:** {selected_agency.growth_opportunity_summary}")
+                    st.write(f"**Tier Explanation:** {selected_agency.tier}")
+
+                st.text_area("Generated Outreach Email", selected_agency.outreach_email, height=300)
+
+            # Export
+            csv_export = df_display.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Export Analyzed Leads to CSV",
+                data=csv_export,
+                file_name="analyzed_agency_leads.csv",
+                mime="text/csv",
+            )
+        else:
+            st.write("No analyzed agency leads found. Upload a CSV to get started.")
+    finally:
+        db.close()

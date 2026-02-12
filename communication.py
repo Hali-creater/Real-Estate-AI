@@ -1,4 +1,7 @@
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import pytz
 
@@ -34,19 +37,43 @@ async def send_email_lead(email: str, subject: str, body: str):
     """
     Sends a professional US-style Email drip.
     Includes CAN-SPAM compliance footer.
+    Attempts real SMTP if configured, else stubs.
     """
     footer = (
         "\n\n---\n"
-        "You are receiving this because you inquired about a property listing. "
-        "To unsubscribe, please click here: [Unsubscribe Link]"
+        "You are receiving this because you inquired about our AI Sales Infrastructure. "
+        "To unsubscribe, please reply STOP. [Enterprise Compliance]"
     )
     full_body = f"{body}{footer}"
 
-    print(f"--- [EMAIL SENT via SendGrid Stub] to {email} ---")
-    print(f"Subject: {subject}")
-    print(full_body)
-    print("-----------------------------------------------")
-    return True
+    smtp_server = os.environ.get("SMTP_SERVER")
+    smtp_port = int(os.environ.get("SMTP_PORT", 587))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+
+    if smtp_server and smtp_user and smtp_password:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = smtp_user
+            msg['To'] = email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(full_body, 'plain'))
+
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+            print(f"Successfully sent email to {email} via SMTP.")
+            return True
+        except Exception as e:
+            print(f"Failed to send email via SMTP: {e}")
+            return False
+    else:
+        print(f"--- [EMAIL STUB] to {email} ---")
+        print(f"Subject: {subject}")
+        print(full_body)
+        print("--- [SMTP NOT CONFIGURED] ---")
+        return True
 
 def get_us_realtor_script(lead_name: str, lead_status: str):
     """
