@@ -10,26 +10,15 @@ import sys
 # Add current directory to path to allow imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from database import init_db, SessionLocal
-    from models import Lead, AgencyLead
-    from lead_scoring import calculate_lead_score
-    from telegram_bot import send_telegram_alert
-    from scheduler import start_scheduler, schedule_lead_follow_ups
-    from agency_intelligence import (
-        clean_and_score_agency, scrape_homepage, analyze_website_with_gpt,
-        qualify_agency, generate_outreach_email, discover_agencies
-    )
-except ImportError:
-    from .database import init_db, SessionLocal
-    from .models import Lead, AgencyLead
-    from .lead_scoring import calculate_lead_score
-    from .telegram_bot import send_telegram_alert
-    from .scheduler import start_scheduler, schedule_lead_follow_ups
-    from .agency_intelligence import (
-        clean_and_score_agency, scrape_homepage, analyze_website_with_gpt,
-        qualify_agency, generate_outreach_email, discover_agencies
-    )
+from database import init_db, SessionLocal
+from models import Lead, AgencyLead
+from lead_scoring import calculate_lead_score
+from telegram_bot import send_telegram_alert
+from scheduler import start_scheduler, schedule_lead_follow_ups
+from agency_intelligence import (
+    clean_and_score_agency, scrape_homepage, analyze_website_with_gpt,
+    qualify_agency, generate_outreach_email, discover_agencies
+)
 
 # Page Config
 st.set_page_config(page_title="SpeedToLead AI: Enterprise Engine", layout="wide", page_icon="🚀")
